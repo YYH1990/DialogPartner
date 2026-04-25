@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Dialog Partner</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #F0F4F8;
+  --surface: #FFFFFF;
+  --primary: #4F46E5;
+  --primary-dark: #3730A3;
+  --c1: #10B981;
+  --c1-light: #D1FAE5;
+  --c1-dark: #047857;
+  --c2: #F59E0B;
+  --c2-light: #FEF3C7;
+  --c2-dark: #B45309;
+  --text: #1E293B;
+  --muted: #64748B;
+  --border: #E2E8F0;
+  --shadow: 0 4px 24px rgba(0,0,0,0.08);
+  --shadow-hover: 0 8px 40px rgba(0,0,0,0.14);
+  --radius: 16px;
+  --radius-sm: 10px;
+  --transition: 0.25s cubic-bezier(0.4,0,0.2,1);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Noto Sans SC', 'Inter', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  line-height: 1.6;
+}
+.container { max-width: 1060px; margin: 0 auto; padding: 48px 24px; }
+header { text-align: center; margin-bottom: 52px; }
+header h1 { font-size: 2.4rem; font-weight: 900; letter-spacing: -0.5px; }
+header h1 span { background: linear-gradient(135deg, var(--primary), var(--c1)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+header p { margin-top: 10px; color: var(--muted); font-size: 1.05rem; }
+.dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+.card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 36px 32px;
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  transition: transform var(--transition), box-shadow var(--transition);
+  border: 2px solid transparent;
+  position: relative;
+  overflow: hidden;
+}
+.card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; border-radius: var(--radius) var(--radius) 0 0; }
+.card.c1::before { background: var(--c1); }
+.card.c2::before { background: var(--c2); }
+.card:hover { transform: translateY(-4px); box-shadow: var(--shadow-hover); }
+.card.c1:hover { border-color: var(--c1-light); }
+.card.c2:hover { border-color: var(--c2-light); }
+.card-icon { width: 60px; height: 60px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 28px; margin-bottom: 20px; }
+.c1 .card-icon { background: var(--c1-light); }
+.c2 .card-icon { background: var(--c2-light); }
+.card h2 { font-size: 1.3rem; font-weight: 700; margin-bottom: 8px; }
+.card p { color: var(--muted); font-size: 0.92rem; line-height: 1.55; margin-bottom: 20px; }
+.card-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.tag { font-size: 0.75rem; padding: 3px 10px; border-radius: 20px; font-weight: 500; }
+.c1 .tag { background: var(--c1-light); color: var(--c1-dark); }
+.c2 .tag { background: var(--c2-light); color: var(--c2-dark); }
+.card-arrow { position: absolute; right: 24px; top: 50%; transform: translateY(-50%); font-size: 22px; opacity: 0.3; transition: opacity var(--transition), transform var(--transition); }
+.card:hover .card-arrow { opacity: 0.7; transform: translateY(-50%) translateX(3px); }
+.view { display: none; animation: fadeIn 0.3s ease; }
+.view.active { display: block; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.back-btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: 0.9rem; font-weight: 500; color: var(--muted);
+  cursor: pointer; margin-bottom: 28px;
+  padding: 8px 16px; border-radius: 8px;
+  border: 1px solid var(--border); background: var(--surface);
+  transition: all var(--transition);
+}
+.back-btn:hover { color: var(--text); border-color: var(--text); }
+.view-header { display: flex; align-items: center; gap: 16px; margin-bottom: 28px; }
+.view-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; }
+.view-icon.c1 { background: var(--c1-light); }
+.view-icon.c2 { background: var(--c2-light); }
+.view-header h2 { font-size: 1.5rem; font-weight: 800; }
+.view-header p { color: var(--muted); font-size: 0.88rem; margin-top: 2px; }
+.form-card { background: var(--surface); border-radius: var(--radius); padding: 32px; box-shadow: var(--shadow); margin-bottom: 24px; }
+.form-group { margin-bottom: 22px; }
+.form-group label { display: block; font-weight: 600; font-size: 0.88rem; margin-bottom: 8px; }
+.form-group label span { color: var(--muted); font-weight: 400; margin-left: 6px; }
+.form-control {
+  width: 100%; padding: 11px 14px;
+  border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+  font-family: inherit; font-size: 0.92rem; color: var(--text);
+  background: #FAFBFC; transition: border-color var(--transition), box-shadow var(--transition);
+  outline: none;
+}
+.form-control:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79,70,229,0.1); background: white; }
+textarea.form-control { resize: vertical; min-height: 100px; }
+.file-upload-area { border: 2px dashed var(--border); border-radius: var(--radius-sm); padding: 28px; text-align: center; cursor: pointer; transition: all var(--transition); background: #FAFBFC; }
+.file-upload-area:hover { border-color: var(--primary); background: white; }
+.file-upload-area input[type="file"] { display: none; }
+.file-upload-icon { font-size: 32px; margin-bottom: 8px; }
+.file-upload-area p { color: var(--muted); font-size: 0.85rem; }
+.file-upload-area strong { color: var(--primary); cursor: pointer; }
+.file-list { list-style: none; margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
+.file-item { display: flex; align-items: center; justify-content: space-between; background: var(--c1-light); padding: 8px 14px; border-radius: 8px; font-size: 0.85rem; }
+.file-item .file-name { display: flex; align-items: center; gap: 8px; color: var(--c1-dark); font-weight: 500; max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.file-item .remove-file { cursor: pointer; color: var(--c1-dark); font-size: 16px; padding: 2px 6px; border-radius: 4px; transition: background 0.15s; }
+.file-item .remove-file:hover { background: rgba(16,185,129,0.2); }
+.btn-primary { display: inline-flex; align-items: center; gap: 8px; background: var(--c1); color: white; border: none; padding: 12px 28px; border-radius: var(--radius-sm); font-family: inherit; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: all var(--transition); }
+.btn-primary:hover { background: var(--c1-dark); transform: translateY(-1px); box-shadow: 0 4px 16px rgba(16,185,129,0.3); }
+.btn-primary:active { transform: translateY(0); }
+.btn-primary:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+.btn-secondary { display: inline-flex; align-items: center; gap: 8px; background: var(--primary); color: white; border: none; padding: 12px 28px; border-radius: var(--radius-sm); font-family: inherit; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: all var(--transition); }
+.btn-secondary:hover { background: var(--primary-dark); transform: translateY(-1px); box-shadow: 0 4px 16px rgba(79,70,229,0.3); }
+.output-card { background: var(--surface); border-radius: var(--radius); padding: 32px; box-shadow: var(--shadow); margin-top: 24px; display: none; }
+.output-card.show { display: block; }
+.output-card h3 { font-size: 1.05rem; font-weight: 700; margin-bottom: 16px; color: var(--text); }
+.question-list { list-style: none; display: flex; flex-direction: column; gap: 12px; }
+.question-item { background: var(--c1-light); border-left: 4px solid var(--c1); padding: 14px 18px; border-radius: 0 var(--radius-sm) var(--radius-sm) 0; font-size: 0.92rem; color: var(--text); line-height: 1.55; }
+.question-item strong { color: var(--c1-dark); font-weight: 600; }
+.copy-btn { float: right; font-size: 0.78rem; padding: 4px 12px; background: var(--c1); color: white; border: none; border-radius: 6px; cursor: pointer; font-family: inherit; transition: background var(--transition); }
+.copy-btn:hover { background: var(--c1-dark); }
+.copy-btn.copied { background: var(--c1-dark); }
+/* Recorder */
+.recorder-card { background: var(--surface); border-radius: var(--radius); padding: 36px; box-shadow: var(--shadow); margin-bottom: 24px; text-align: center; }
+.rec-status { font-size: 0.85rem; font-weight: 600; color: var(--muted); margin-bottom: 24px; text-transform: uppercase; letter-spacing: 1px; }
+.rec-status.recording { color: #EF4444; }
+.timer { font-size: 2.8rem; font-weight: 800; font-family: 'Inter', monospace; color: var(--text); margin-bottom: 28px; letter-spacing: 2px; }
+.waveform { display: flex; align-items: center; justify-content: center; gap: 4px; height: 48px; margin-bottom: 28px; }
+.waveform .bar { width: 5px; border-radius: 3px; background: var(--c2); animation: wave 1s ease-in-out infinite; opacity: 0.4; }
+.waveform.recording .bar { opacity: 1; }
+@keyframes wave { 0%, 100% { height: 8px; } 50% { height: 36px; } }
+.waveform .bar:nth-child(1) { animation-delay: 0s; }
+.waveform .bar:nth-child(2) { animation-delay: 0.1s; }
+.waveform .bar:nth-child(3) { animation-delay: 0.2s; }
+.waveform .bar:nth-child(4) { animation-delay: 0.3s; }
+.waveform .bar:nth-child(5) { animation-delay: 0.4s; }
+.waveform .bar:nth-child(6) { animation-delay: 0.5s; }
+.waveform .bar:nth-child(7) { animation-delay: 0.6s; }
+.waveform .bar:nth-child(8) { animation-delay: 0.7s; }
+.waveform .bar:nth-child(9) { animation-delay: 0.8s; }
+.waveform .bar:nth-child(10) { animation-delay: 0.9s; }
+.record-btn { width: 72px; height: 72px; border-radius: 50%; border: 3px solid var(--c2); background: white; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: all var(--transition); position: relative; }
+.record-btn:hover { background: var(--c2-light); transform: scale(1.05); }
+.record-btn.recording { background: #FEE2E2; border-color: #EF4444; animation: pulse-ring 1.5s ease infinite; }
+@keyframes pulse-ring { 0% { box-shadow: 0 0 0 0 rgba(239,68,68,0.4); } 70% { box-shadow: 0 0 0 18px rgba(239,68,68,0); } 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0); } }
+.record-btn-inner { width: 28px; height: 28px; border-radius: 50%; background: #EF4444; transition: all var(--transition); }
+.record-btn.recording .record-btn-inner { border-radius: 6px; width: 22px; height: 22px; }
+.rec-hint { margin-top: 16px; font-size: 0.8rem; color: var(--muted); }
+/* Transcript */
+.transcript-card { background: var(--surface); border-radius: var(--radius); padding: 28px 32px; box-shadow: var(--shadow); margin-bottom: 24px; display: none; }
+.transcript-card.show { display: block; }
+.transcript-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; }
+.edit-transcript-btn { font-size: 0.78rem; padding: 3px 10px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; cursor: pointer; font-family: inherit; color: var(--muted); transition: all var(--transition); }
+.edit-transcript-btn:hover { color: var(--text); }
+.transcript-text { background: #F8FAFC; border: 1.5px solid var(--border); border-radius: var(--radius-sm); padding: 16px; font-size: 0.92rem; line-height: 1.7; color: var(--text); min-height: 80px; outline: none; white-space: pre-wrap; }
+.transcript-text:focus { border-color: var(--primary); background: white; }
+.transcript-interim { color: #94A3B8; font-style: italic; }
+/* Analysis */
+.analysis-grid { display: none; grid-template-columns: 1fr 1fr; gap: 20px; }
+.analysis-grid.show { display: grid; }
+.analysis-card { background: var(--surface); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow); }
+.analysis-card h3 { font-size: 0.95rem; font-weight: 700; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+.analysis-card ul { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.analysis-card li { font-size: 0.88rem; color: var(--text); padding-left: 16px; position: relative; line-height: 1.5; }
+.analysis-card li::before { content: '>'; position: absolute; left: 0; color: var(--c2); font-weight: 700; }
+/* Stars */
+.score-card { background: var(--surface); border-radius: var(--radius); padding: 28px 32px; box-shadow: var(--shadow); margin-top: 20px; display: none; }
+.score-card.show { display: block; }
+.score-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 20px; }
+.score-dims { display: flex; flex-direction: column; gap: 16px; margin-bottom: 20px; }
+.score-dim { display: flex; align-items: center; gap: 12px; }
+.score-dim-name { font-size: 0.88rem; font-weight: 500; min-width: 130px; color: var(--text); }
+.stars { display: flex; gap: 4px; }
+.star { font-size: 20px; cursor: pointer; color: #D1D5DB; transition: color 0.1s, transform 0.1s; user-select: none; }
+.star.lit { color: #F59E0B; }
+.star:hover { transform: scale(1.2); }
+.dim-score { font-size: 0.82rem; color: var(--muted); min-width: 20px; }
+.total-score { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; background: var(--c2-light); border-radius: var(--radius-sm); margin-bottom: 16px; }
+.total-score-label { font-weight: 600; color: var(--c2-dark); }
+.total-score-value { font-size: 1.5rem; font-weight: 900; color: var(--c2-dark); font-family: 'Inter', monospace; }
+.score-actions { display: flex; gap: 12px; }
+.btn-outline { display: inline-flex; align-items: center; gap: 6px; padding: 9px 20px; border: 1.5px solid var(--border); border-radius: var(--radius-sm); background: transparent; font-family: inherit; font-size: 0.88rem; font-weight: 500; cursor: pointer; color: var(--muted); transition: all var(--transition); }
+.btn-outline:hover { border-color: var(--text); color: var(--text); }
+.btn-secondary:disabled { opacity: 0.6; cursor: not-allowed; }
+#analyze-loading { display: none; text-align: center; padding: 16px; color: var(--muted); font-size: 0.88rem; }
+#api-saved-msg { display: none; font-size: 0.82rem; color: var(--c1); margin-top: 6px; }
+.api-hint { font-size: 0.78rem; color: var(--muted); margin-top: 8px; }
+.api-hint strong { color: var(--primary); }
+@media (max-width: 768px) {
+  .dashboard { grid-template-columns: 1fr; }
+  .analysis-grid { grid-template-columns: 1fr; }
+  .container { padding: 28px 16px; }
+  header h1 { font-size: 1.8rem; }
+  .score-dim { flex-wrap: wrap; }
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <header>
+    <h1>AI Dialog Partner</h1>
+    <p>两款 AI 对话工具，助力高效沟通</p>
+  </header>
+
+  <div class="dashboard" id="dashboard">
+    <div class="card c1" onclick="showView('qg')">
+      <div class="card-icon">💬</div>
+      <h2>Leading Question Generator</h2>
+      <p>基于对话类型与目的，生成结构化的引导性问题，快速厘清对话方向</p>
+      <div class="card-tags">
+        <span class="tag">引导性问题</span>
+        <span class="tag">结构化提问</span>
+        <span class="tag">背景学习</span>
+      </div>
+      <div class="card-arrow">›</div>
+    </div>
+
+    <div class="card c2" onclick="showView('da')">
+      <div class="card-icon">🎙️</div>
+      <h2>Dialog Analyzer</h2>
+      <p>录音 → 实时转写 → AI 总结 → 多维评分，助力客观评估对话质量</p>
+      <div class="card-tags">
+        <span class="tag">录音转写</span>
+        <span class="tag">AI 总结</span>
+        <span class="tag">评分表</span>
+      </div>
+      <div class="card-arrow">›</div>
+    </div>
+  </div>
+
+  <!-- VIEW 1: Question Generator -->
+  <div class="view" id="view-qg">
+    <button class="back-btn" onclick="showDashboard()">‹ 返回</button>
+    <div class="view-header">
+      <div class="view-icon c1">💬</div>
+      <div>
+        <h2>Leading Question Generator</h2>
+        <p>填写对话信息，AI 生成结构化引导性问题</p>
+      </div>
+    </div>
+
+    <div class="form-card">
+      <div class="form-group">
+        <label>对话类型 <span>例如：职业发展对话、绩效反馈面谈、跨部门协作沟通</span></label>
+        <input type="text" class="form-control" id="qg-type" placeholder="输入对话类型" />
+      </div>
+      <div class="form-group">
+        <label>对话目的 <span>描述此次对话的核心目标</span></label>
+        <textarea class="form-control" id="qg-purpose" rows="4" placeholder="例如：根据公司对人才考评的标准和员工的职业规划想法，进行人才评估…"></textarea>
+      </div>
+      <div class="form-group">
+        <label>背景信息 <span>上传相关文档（简历、考评标准、项目介绍等），支持 PDF / Word / TXT</span></label>
+        <div class="file-upload-area" onclick="document.getElementById('qg-files').click()">
+          <div class="file-upload-icon">📎</div>
+          <p>点击上传文件，或拖拽文件到此处<br><strong>选择文件</strong></p>
+          <input type="file" id="qg-files" multiple accept=".pdf,.doc,.docx,.txt" onchange="handleFileUpload(this)" />
+        </div>
+        <ul class="file-list" id="qg-file-list"></ul>
+      </div>
+      <button class="btn-primary" id="qg-generate-btn" onclick="generateQuestions()">🚀 生成引导性问题</button>
+    </div>
+
+    <div class="output-card" id="qg-output">
+      <button class="copy-btn" id="copy-btn" onclick="copyQuestions()">复制</button>
+      <h3>生成的引导性问题</h3>
+      <ol class="question-list" id="qg-questions"></ol>
+    </div>
+  </div>
+
+  <!-- VIEW 2: Dialog Analyzer -->
+  <div class="view" id="view-da">
+    <button class="back-btn" onclick="showDashboard()">‹ 返回</button>
+    <div class="view-header">
+      <div class="view-icon c2">🎙️</div>
+      <div>
+        <h2>Dialog Analyzer</h2>
+        <p>录音对话，AI 自动转写、总结并给出初步评分</p>
+      </div>
+    </div>
+
+    <!-- API Key -->
+    <div class="transcript-card show" id="api-card">
+      <h3>🔑 AI API Key <span style="font-size:0.78rem;font-weight:400;color:var(--muted);margin-left:8px;">填入后保存，AI 分析才能生效</span></h3>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+        <input type="password" class="form-control" id="api-key" placeholder="输入 MiniMax API Key" style="flex:1;min-width:200px;" />
+        <button class="btn-primary" onclick="saveApiKey()" style="padding:11px 20px;">保存</button>
+      </div>
+      <p class="api-hint">MiniMax API Key 获取：<strong>https://www.minimaxi.com</strong>（注册有免费额度）</p>
+      <p id="api-saved-msg">✓ 已保存</p>
+    </div>
+
+    <!-- Recorder -->
+    <div class="recorder-card" id="recorder-card">
+      <div class="rec-status" id="rec-status">准备就绪</div>
+      <div class="timer" id="timer">00:00</div>
+      <div class="waveform" id="waveform">
+        <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+        <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+        <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+        <div class="bar"></div>
+      </div>
+      <button class="record-btn" id="record-btn" onclick="toggleRecording()">
+        <div class="record-btn-inner"></div>
+      </button>
+      <p class="rec-hint">点击开始录音，录音结束后再次点击停止</p>
+    </div>
+
+    <!-- Transcript -->
+    <div class="transcript-card" id="transcript-card">
+      <h3>
+        📝 对话转写
+        <button class="edit-transcript-btn" id="edit-transcript-btn" onclick="toggleEditTranscript()">编辑</button>
+      </h3>
+      <div class="transcript-text" id="transcript-text" contenteditable="false">（转写内容将显示在这里…）</div>
+      <div style="margin-top:14px;display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap;">
+        <button class="btn-secondary" id="analyze-btn" onclick="analyzeDialog()">🔍 AI 分析与评分</button>
+      </div>
+      <div id="analyze-loading">⏳ AI 正在分析，请稍候…</div>
+    </div>
+
+    <!-- Analysis -->
+    <div class="analysis-grid" id="analysis-grid">
+      <div class="analysis-card">
+        <h3>💡 关键要点</h3>
+        <ul>
+          <li>（AI 分析结果将显示在这里）</li>
+        </ul>
+      </div>
+      <div class="analysis-card">
+        <h3>✅ 行动项</h3>
+        <ul>
+          <li>（AI 分析结果将显示在这里）</li>
+        </ul>
+      </div>
+      <div class="analysis-card">
+        <h3>🎭 对话氛围与风格</h3>
+        <ul>
+          <li>（AI 分析结果将显示在这里）</li>
+        </ul>
+      </div>
+      <div class="analysis-card">
+        <h3>⭐ 总体评价</h3>
+        <ul>
+          <li>（AI 分析结果将显示在这里）</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Scoring -->
+    <div class="score-card" id="score-card">
+      <h3>📊 初步评分表</h3>
+      <div class="score-dims">
+        <div class="score-dim">
+          <span class="score-dim-name">沟通表达</span>
+          <div class="stars" data-dim="comm">
+            <span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span>
+          </div>
+          <span class="dim-score" id="score-comm">0/5</span>
+        </div>
+        <div class="score-dim">
+          <span class="score-dim-name">问题解决</span>
+          <div class="stars" data-dim="problem">
+            <span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span>
+          </div>
+          <span class="dim-score" id="score-problem">0/5</span>
+        </div>
+        <div class="score-dim">
+          <span class="score-dim-name">领导力</span>
+          <div class="stars" data-dim="leadership">
+            <span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span>
+          </div>
+          <span class="dim-score" id="score-leadership">0/5</span>
+        </div>
+        <div class="score-dim">
+          <span class="score-dim-name">团队协作</span>
+          <div class="stars" data-dim="teamwork">
+            <span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span>
+          </div>
+          <span class="dim-score" id="score-teamwork">0/5</span>
+        </div>
+        <div class="score-dim">
+          <span class="score-dim-name">目标导向</span>
+          <div class="stars" data-dim="goal">
+            <span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span>
+          </div>
+          <span class="dim-score" id="score-goal">0/5</span>
+        </div>
+      </div>
+      <div class="total-score">
+        <span class="total-score-label">综合得分</span>
+        <span class="total-score-value" id="total-score">0 / 25</span>
+      </div>
+      <div class="score-actions">
+        <button class="btn-outline" onclick="exportScore()">📥 导出评分表</button>
+        <button class="btn-outline" onclick="resetScore()">🔄 重置评分</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ── Navigation ──
+function showView(id) {
+  document.getElementById('dashboard').style.display = 'none';
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('view-' + id).classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+function showDashboard() {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.getElementById('dashboard').style.display = 'grid';
+}
+
+// ── Question Generator ──
+const uploadedFiles = [];
+function handleFileUpload(input) {
+  const list = document.getElementById('qg-file-list');
+  Array.from(input.files).forEach(file => {
+    if (uploadedFiles.find(f => f.name === file.name)) return;
+    uploadedFiles.push(file);
+    const li = document.createElement('li');
+    li.className = 'file-item';
+    li.innerHTML = `<span class="file-name">📄 ${file.name}</span><span class="remove-file" onclick="removeFile('${file.name}', this)">✕</span>`;
+    list.appendChild(li);
+  });
+  input.value = '';
+}
+function removeFile(name, btn) {
+  const idx = uploadedFiles.findIndex(f => f.name === name);
+  if (idx > -1) uploadedFiles.splice(idx, 1);
+  btn.parentElement.remove();
+}
+
+const questionTemplates = {
+  职业发展: [
+    "请介绍一下你对自己未来3-5年职业发展的期望？",
+    "你目前的工作中，哪些部分最让你有成就感？",
+    "在你当前岗位上，哪些能力你认为还有提升空间？",
+    "公司的XX项目/XX方向与你的职业规划有哪些契合点？",
+    "如果有一个机会可以让你轮岗到其他部门，你最感兴趣的是哪个方向？为什么？",
+    "你认为要达到下一个职业发展阶段，还需要哪些支持或资源？",
+  ],
+  绩效反馈: [
+    "请先谈谈你对过去一个周期自己工作表现的整体评价？",
+    "在完成这些目标的过程中，你遇到了哪些主要挑战？",
+    "你觉得哪些做得好、哪些可以做得更好？",
+    "关于下阶段的OKR，你有哪些想法？",
+    "在资源或支持方面，你有什么需求？",
+  ],
+  default: [
+    "请先介绍一下你对这个议题的理解和想法？",
+    "你希望通过这次对话解决什么问题或达成什么目标？",
+    "能分享一个相关的实际案例吗？",
+    "你对这个问题的优先级是如何考虑的？",
+    "如果这个问题解决了，会带来什么影响或价值？",
+  ]
+};
+
+function generateQuestions() {
+  const type = document.getElementById('qg-type').value.trim();
+  const purpose = document.getElementById('qg-purpose').value.trim();
+  const btn = document.getElementById('qg-generate-btn');
+  if (!type || !purpose) { alert('请填写对话类型和对话目的'); return; }
+  btn.disabled = true;
+  btn.textContent = '⏳ AI 正在生成…';
+  localStorage.setItem('qg-type', type);
+  localStorage.setItem('qg-purpose', purpose);
+  setTimeout(() => {
+    let questions;
+    if (type.includes('职业发展') || type.includes('发展')) questions = questionTemplates['职业发展'];
+    else if (type.includes('绩效') || type.includes('反馈')) questions = questionTemplates['绩效反馈'];
+    else questions = questionTemplates['default'];
+    if (purpose.length > 20) questions.push(`基于我们讨论的目的——"${purpose.slice(0, 30)}…"——你觉得最关键的挑战是什么？`);
+    const list = document.getElementById('qg-questions');
+    list.innerHTML = '';
+    questions.forEach((q, i) => {
+      const li = document.createElement('li');
+      li.className = 'question-item';
+      li.innerHTML = `<strong>Q${i + 1}</strong> ${q}`;
+      list.appendChild(li);
+    });
+    document.getElementById('qg-output').classList.add('show');
+    btn.disabled = false;
+    btn.textContent = '🚀 生成引导性问题';
+    window.scrollTo({ top: document.getElementById('qg-output').offsetTop - 100, behavior: 'smooth' });
+  }, 1200);
+}
+
+function copyQuestions() {
+  const items = document.querySelectorAll('.question-item');
+  const text = Array.from(items).map((li, i) => `Q${i + 1}: ${li.textContent.replace(/^Q\d+:\s*/, '')}`).join('\n');
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('copy-btn');
+    btn.textContent = '已复制 ✓';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = '复制'; btn.classList.remove('copied'); }, 1800);
+  });
+}
+
+// ── Dialog Analyzer — Speech Recognition ──
+let recognition = null;
+let recordingTimer = null;
+let seconds = 0;
+let isRecording = false;
+let finalTranscript = '';
+let interimText = '';
+const dimScores = { comm: 0, problem: 0, leadership: 0, teamwork: 0, goal: 0 };
+
+function initSpeechRecognition() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) return null;
+  const rec = new SR();
+  rec.continuous = true;
+  rec.interimResults = true;
+  rec.lang = 'zh-CN';
+  rec.onresult = (event) => {
+    interimText = '';
+    for (let i = event.resultIndex; i < event.results.length; i++) {
+      const p = event.results[i][0].transcript;
+      if (event.results[i].isFinal) finalTranscript += p + '\n';
+      else interimText += p;
+    }
+    const el = document.getElementById('transcript-text');
+    el.textContent = finalTranscript + (interimText ? `[${interimText}]` : '');
+    el.scrollTop = el.scrollHeight;
+  };
+  rec.onerror = (e) => {
+    if (e.error === 'not-allowed') { alert('请允许麦克风权限后重试'); stopRecording(); }
+  };
+  rec.onend = () => { if (isRecording) { try { rec.start(); } catch (e) {} } };
+  return rec;
+}
+
+function toggleRecording() {
+  const btn = document.getElementById('record-btn');
+  const status = document.getElementById('rec-status');
+  const waveform = document.getElementById('waveform');
+  if (!isRecording) {
+    if (!recognition) recognition = initSpeechRecognition();
+    if (!recognition) { alert('当前浏览器不支持语音识别，请使用 Safari 或 Chrome'); return; }
+    try {
+      finalTranscript = '';
+      interimText = '';
+      recognition.start();
+      isRecording = true;
+      document.getElementById('transcript-card').classList.add('show');
+      const el = document.getElementById('transcript-text');
+      el.textContent = '正在倾听，请说话…';
+      el.contentEditable = 'false';
+      btn.classList.add('recording');
+      waveform.classList.add('recording');
+      status.classList.add('recording');
+      status.textContent = '● 录音中';
+      seconds = 0;
+      recordingTimer = setInterval(() => {
+        seconds++;
+        const m = String(Math.floor(seconds / 60)).padStart(2, '0');
+        const s = String(seconds % 60).padStart(2, '0');
+        document.getElementById('timer').textContent = `${m}:${s}`;
+      }, 1000);
+    } catch (e) { alert('请允许麦克风权限后重试'); }
+  } else {
+    stopRecording();
+    btn.classList.remove('recording');
+    waveform.classList.remove('recording');
+    status.classList.remove('recording');
+    status.textContent = '转写完成';
+    clearInterval(recordingTimer);
+  }
+}
+
+function stopRecording() {
+  if (recognition) { try { recognition.stop(); } catch (e) {} }
+  isRecording = false;
+  const el = document.getElementById('transcript-text');
+  if (finalTranscript) el.textContent = finalTranscript.trim();
+}
+
+function toggleEditTranscript() {
+  const el = document.getElementById('transcript-text');
+  const btn = document.getElementById('edit-transcript-btn');
+  if (el.contentEditable === 'true') {
+    el.contentEditable = 'false';
+    btn.textContent = '编辑';
+  } else {
+    el.contentEditable = 'true';
+    el.focus();
+    btn.textContent = '完成';
+  }
+}
+
+// ── AI Analysis ──
+function saveApiKey() {
+  const key = document.getElementById('api-key').value.trim();
+  if (!key) { alert('请输入 API Key'); return; }
+  localStorage.setItem('mini-api-key', key);
+  const msg = document.getElementById('api-saved-msg');
+  msg.style.display = 'block';
+  setTimeout(() => msg.style.display = 'none', 3000);
+}
+
+function analyzeDialog() {
+  const apiKey = localStorage.getItem('mini-api-key');
+  if (!apiKey) {
+    alert('请先输入并保存 AI API Key（点击上方「保存」按钮）');
+    document.getElementById('api-key').focus();
+    return;
+  }
+  const transcript = document.getElementById('transcript-text').textContent.trim();
+  if (!transcript || transcript === '（转写内容将显示在这里…）' || transcript === '正在倾听，请说话…') {
+    alert('请先录音并确认有转写内容');
+    return;
+  }
+  const btn = document.getElementById('analyze-btn');
+  const loading = document.getElementById('analyze-loading');
+  btn.disabled = true;
+  btn.textContent = '分析中…';
+  loading.style.display = 'block';
+
+  const prompt = `你是一位专业的HRBP对话分析师。请分析以下对话记录，输出一份结构化的分析报告，用中文回答。
+
+【对话记录】
+${transcript}
+
+请严格按以下格式输出（每项都要有内容，不要省略）：
+
+## 💡 关键要点
+（列出3-5条对话的核心内容和主题，每条一行）
+
+## ✅ 行动项
+（列出对话中双方达成的行动项或待办事项，每条一行）
+
+## 🎭 对话氛围与风格
+（分析双方的语气、态度、沟通风格，2-3句话）
+
+## 📊 初步评分（每项1-5分）
+- 沟通表达：（分数1-5 + 简短理由，不超过20字）
+- 问题解决：（分数1-5 + 简短理由，不超过20字）
+- 领导力：（分数1-5 + 简短理由，不超过20字）
+- 团队协作：（分数1-5 + 简短理由，不超过20字）
+- 目标导向：（分数1-5 + 简短理由，不超过20字）
+
+## ⭐ 总体评价
+（2-3句话总结对话整体质量）`;
+
+  fetch('https://api.minimaxi.chat/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01'
+    },
+    body: JSON.stringify({
+      model: 'MiniMax-M2.7',
+      max_tokens: 2048,
+      messages: [{ role: 'user', content: prompt }]
+    })
+  })
+  .then(r => r.json())
+  .then(data => {
+    btn.disabled = false;
+    btn.textContent = '🔍 AI 分析与评分';
+    loading.style.display = 'none';
+    const text = (data.content && data.content[0] && data.content[0].text)
+      ? data.content[0].text
+      : '分析失败，请检查API Key或稍后重试。';
+    displayAnalysis(text);
+  })
+  .catch(err => {
+    btn.disabled = false;
+    btn.textContent = '🔍 AI 分析与评分';
+    loading.style.display = 'none';
+    displayAnalysis('网络错误，请检查网络连接后重试。错误信息：' + err.message);
+  });
+}
+
+function displayAnalysis(text) {
+  const grid = document.getElementById('analysis-grid');
+  const score = document.getElementById('score-card');
+  grid.classList.add('show');
+  score.classList.add('show');
+
+  // Parse sections
+  const cards = document.querySelectorAll('.analysis-card');
+  const sections = text.split('##').filter(s => s.trim());
+  const keywords = ['关键要点', '行动项', '对话氛围', '总体评价'];
+  sections.forEach(sec => {
+    let lower = sec.toLowerCase();
+    let idx = -1;
+    if (lower.includes('关键要点')) idx = 0;
+    else if (lower.includes('行动项')) idx = 1;
+    else if (lower.includes('氛围') || lower.includes('风格')) idx = 2;
+    else if (lower.includes('总体评价') || lower.includes('总评')) idx = 3;
+    if (idx >= 0 && cards[idx]) {
+      const lines = sec.split('\n').filter(l => l.trim());
+      const items = lines.filter(l => l.match(/^[-\u2022\u25CF]\s|^[\u2605\u2714]\s|^\d+[.、）)]/));
+      const ul = cards[idx].querySelector('ul');
+      if (ul) {
+        ul.innerHTML = '';
+        if (items.length > 0) {
+          items.forEach(item => {
+            const li = document.createElement('li');
+            li.textContent = item.replace(/^[-\u2022\u25CF\u2605\u2714\d.、）)]\s+/, '').trim();
+            ul.appendChild(li);
+          });
+        } else {
+          // Fallback: show non-empty lines
+          lines.slice(1).forEach(l => {
+            if (l.trim() && !l.includes('#')) {
+              const li = document.createElement('li');
+              li.textContent = l.replace(/^[-\s]+/, '').trim();
+              ul.appendChild(li);
+            }
+          });
+        }
+      }
+    }
+  });
+
+  // Parse scores
+  const extractScore = (label) => {
+    const m = text.match(new RegExp(label + '[：:]\\s*(\\d)'));
+    return m ? parseInt(m[1]) : 0;
+  };
+  const dims = ['comm', 'problem', 'leadership', 'teamwork', 'goal'];
+  const scores = [
+    extractScore('沟通表达'),
+    extractScore('问题解决'),
+    extractScore('领导力'),
+    extractScore('团队协作'),
+    extractScore('目标导向'),
+  ];
+  dims.forEach((dim, i) => {
+    rateStarSilent(document.querySelector(`[data-dim="${dim}"]`), scores[i]);
+  });
+
+  score.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function rateStar(container, dimIdx) {
+  const stars = container.querySelectorAll('.star');
+  const dimIds = ['comm', 'problem', 'leadership', 'teamwork', 'goal'];
+  const dim = dimIds[dimIdx - 1];
+  stars.forEach((s, i) => {
+    s.onclick = () => {
+      const val = i + 1;
+      dimScores[dim] = val;
+      stars.forEach((s2, j) => s2.classList.toggle('lit', j <= i));
+      document.getElementById('score-' + dim).textContent = val + '/5';
+      updateTotal();
+    };
+  });
+}
+
+function rateStarSilent(container, val) {
+  const stars = container.querySelectorAll('.star');
+  const dim = container.dataset.dim;
+  dimScores[dim] = val;
+  stars.forEach((s, i) => s.classList.toggle('lit', i < val));
+  document.getElementById('score-' + dim).textContent = val + '/5';
+  updateTotal();
+}
+
+function updateTotal() {
+  const total = Object.values(dimScores).reduce((a, b) => a + b, 0);
+  document.getElementById('total-score').textContent = total + ' / 25';
+}
+
+function resetScore() {
+  Object.keys(dimScores).forEach(k => dimScores[k] = 0);
+  document.querySelectorAll('.stars').forEach(c => c.querySelectorAll('.star').forEach(s => s.classList.remove('lit')));
+  ['comm', 'problem', 'leadership', 'teamwork', 'goal'].forEach(d => document.getElementById('score-' + d).textContent = '0/5');
+  document.getElementById('total-score').textContent = '0 / 25';
+}
+
+function exportScore() {
+  const total = Object.values(dimScores).reduce((a, b) => a + b, 0);
+  const transcript = document.getElementById('transcript-text').textContent;
+  let text = `AI Dialog Partner — 对话评分报告\n═══════════════════════════════════════\n\n【评分详情】\n  沟通表达：${dimScores.comm || 0}/5\n  问题解决：${dimScores.problem || 0}/5\n  领导力：${dimScores.leadership || 0}/5\n  团队协作：${dimScores.teamwork || 0}/5\n  目标导向：${dimScores.goal || 0}/5\n\n  综合得分：${total}/25\n\n【对话转写摘要】\n${transcript.slice(0, 500)}${transcript.length > 500 ? '…' : ''}\n`;
+  const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'Dialog_Score_Report.txt'; a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ── Init ──
+document.addEventListener('DOMContentLoaded', () => {
+  const savedType = localStorage.getItem('qg-type');
+  const savedPurpose = localStorage.getItem('qg-purpose');
+  if (savedType) document.getElementById('qg-type').value = savedType;
+  if (savedPurpose) document.getElementById('qg-purpose').value = savedPurpose;
+
+  const savedKey = localStorage.getItem('mini-api-key');
+  if (savedKey) document.getElementById('api-key').value = savedKey;
+
+  ['comm', 'problem', 'leadership', 'teamwork', 'goal'].forEach((dim, idx) => {
+    const container = document.querySelector(`[data-dim="${dim}"]`);
+    container.querySelectorAll('.star').forEach((star, starIdx) => {
+      star.onclick = () => {
+        const val = starIdx + 1;
+        dimScores[dim] = val;
+        container.querySelectorAll('.star').forEach((s, j) => s.classList.toggle('lit', j <= starIdx));
+        document.getElementById('score-' + dim).textContent = val + '/5';
+        updateTotal();
+      };
+    });
+  });
+});
+</script>
+</body>
+</html>
